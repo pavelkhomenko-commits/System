@@ -294,7 +294,6 @@
     <div class="rankbar-track"><div class="rankbar-fill" id="rankbarFill"></div></div>
     <div class="rankbar-caption"><span id="rankNow">E</span><span id="rankNext">D</span></div>
     <button class="btn" id="storyBtn" style="margin-top:12px;width:100%;">📖 ПОКАЗАТЬ КАК STORY</button>
-    <button class="btn" id="migrateBtn" style="margin-top:8px;width:100%;font-size:10px;opacity:.7;">↺ Восстановить старый прогресс (если открыто в Claude)</button>
   </div>
 
   <div class="grid">
@@ -339,14 +338,7 @@
     </div>
   </div>
 
-  <div class="panel" style="border-color:var(--violet);">
-    <span class="bl" style="border-color:var(--violet);"></span><span class="br" style="border-color:var(--violet);"></span>
-    <div class="eyebrow" style="color:var(--violet);">BOSS QUEST · OPTIONAL</div>
-    <h3 style="font-size:15px;letter-spacing:1px;color:var(--text-hi);margin-bottom:4px;">Развернуть SYSTEM как веб-приложение на экране iPhone</h3>
-    <p style="font-size:12px;color:var(--text-mid);margin:6px 0 12px;">Не daily-квест. Открывается, когда дойдут руки. Прокачивает INT через практику работы с ИИ/скриптами/деплоем.</p>
-    <div id="bossQuestList"></div>
-    <div id="bossQuestReward" style="font-size:11px;color:var(--text-low);margin-top:8px;"></div>
-  </div>
+  <div id="bossQuestsContainer"></div>
 
   <div class="panel"><span class="bl"></span><span class="br"></span>
     <div class="eyebrow">SYSTEM LOG</div>
@@ -857,93 +849,163 @@ async function onRest(){
   renderQuests();
 }
 
-// ---- boss quest: deploy as home-screen web app ----
-const BOSS_STEPS = [
-  {id:'sheet', text:'Создать Google Sheet для хранения прогресса'},
-  {id:'script', text:'Написать Google Apps Script (Web App): приём и выдача данных'},
-  {id:'deploy', text:'Задеплоить Apps Script как Web App, получить URL'},
-  {id:'connect', text:'Подключить HTML-виджет System Window к этому URL вместо window.storage'},
-  {id:'host', text:'Разместить страницу (GitHub Pages/Vercel, либо прямой URL Apps Script)'},
-  {id:'homescreen', text:'Добавить страницу на экран iPhone через Safari → «На экран Домой»'},
-  {id:'verify', text:'Проверить: закрыл вкладку, открыл заново — прогресс на месте'},
+// ---- boss quests: реестр всех крупных, необязательных задач ----
+const BOSS_QUESTS = [
+  {
+    key: 'webapp',
+    title: 'Развернуть SYSTEM как веб-приложение на экране iPhone',
+    desc: 'Прокачивает INT через практику работы с ИИ/скриптами/деплоем.',
+    steps: [
+      {id:'sheet', text:'Создать Google Sheet для хранения прогресса'},
+      {id:'script', text:'Написать Google Apps Script (Web App): приём и выдача данных'},
+      {id:'deploy', text:'Задеплоить Apps Script как Web App, получить URL'},
+      {id:'connect', text:'Подключить HTML-виджет System Window к этому URL вместо window.storage'},
+      {id:'host', text:'Разместить страницу (GitHub Pages/Vercel, либо прямой URL Apps Script)'},
+      {id:'homescreen', text:'Добавить страницу на экран iPhone через Safari → «На экран Домой»'},
+      {id:'verify', text:'Проверить: закрыл вкладку, открыл заново — прогресс на месте'},
+    ],
+    rewardXp: 100, rewardStat: 'INT', rewardTitle: 'System Architect',
+    completedText: 'System развёрнут на экране iPhone',
+  },
+  {
+    key: 'aikibudo-platform',
+    title: 'Платформа для учеников Айкибудо (совместно с учеником-программистом)',
+    desc: 'Долгий совместный проект — часть кода пишет ученик, поэтому награда меньше, чем за сольную работу. Прокачивает INT через управление реальным продуктом.',
+    steps: [
+      {id:'spec', text:'Сформулировать с учеником, что должна уметь платформа (регистрация, видео-уроки, список учеников)'},
+      {id:'arch', text:'Согласовать архитектуру: где хранятся данные, как устроена авторизация, где живёт видео'},
+      {id:'auth', text:'Протестировать первую версию регистрации/входа'},
+      {id:'video', text:'Загрузить первое видео-урок и проверить, что оно воспроизводится'},
+      {id:'pilot', text:'Дать доступ 2-3 реальным ученикам, собрать обратную связь'},
+      {id:'iterate', text:'Внести правки по фидбэку учеников'},
+    ],
+    rewardXp: 60, rewardStat: 'INT', rewardTitle: 'Наставник-архитектор',
+    completedText: 'Платформа для учеников Айкибудо запущена',
+  },
+  {
+    key: 'solo-hike',
+    title: 'Одиночный поход',
+    desc: 'Изначальная цель — больше двигаться и увидеть новые места. Только ходьба, без взрывной нагрузки на ноги — безопасно и сейчас, до заключения врача.',
+    steps: [
+      {id:'route', text:'Выбрать маршрут и локацию по силам (однодневный)'},
+      {id:'gear', text:'Собрать снаряжение, продумать безопасность (погода, кому сообщить о плане похода)'},
+      {id:'weather', text:'Проверить прогноз погоды и подтвердить дату'},
+      {id:'go', text:'Совершить поход'},
+      {id:'reflect', text:'Отметить по возвращении, записать впечатления'},
+    ],
+    rewardXp: 80, rewardStat: 'VIT', rewardTitle: 'Одинокий странник',
+    completedText: 'Поход состоялся',
+  },
 ];
-const BOSS_REWARD_XP = 100;
-let bossData = {completed:[], claimed:false};
 
-async function getBossQuest(){
+let bossState = {}; // key -> {completed:[], claimed:false}
+
+async function getBossQuestData(key){
   try{
-    const r = await storageGet('bossquest:webapp');
+    const r = await storageGet('bossquest:'+key);
     if(r && r.value) return JSON.parse(r.value);
   }catch(e){ /* none yet */ }
   return {completed:[], claimed:false};
 }
-async function saveBossQuest(){
+async function saveBossQuestData(key, data){
   try{
-    const r = await storageSet('bossquest:webapp', JSON.stringify(bossData));
+    const r = await storageSet('bossquest:'+key, JSON.stringify(data));
     return !!r;
   } catch(e){ console.error('save boss quest failed', e); return false; }
 }
-
-function renderBossQuest(){
-  const box = document.getElementById('bossQuestList');
-  box.innerHTML = '';
-  BOSS_STEPS.forEach(step=>{
-    const done = bossData.completed.includes(step.id);
-    const row = document.createElement('div');
-    row.className = 'quest-item'+(done?' done':'');
-    row.innerHTML = `
-      <input type="checkbox" id="boss_${step.id}" ${done?'checked':''} ${bossData.claimed?'disabled':''}>
-      <label for="boss_${step.id}">${step.text}</label>
-    `;
-    box.appendChild(row);
-    row.querySelector('input').addEventListener('change', (e)=>onBossStepToggle(step.id, e.target.checked));
-  });
-  const rewardBox = document.getElementById('bossQuestReward');
-  if(bossData.claimed){
-    rewardBox.textContent = `Завершено — начислено +${BOSS_REWARD_XP} INT, титул «System Architect»`;
-    rewardBox.style.color = 'var(--violet)';
-  } else {
-    rewardBox.textContent = `Награда за полное завершение: +${BOSS_REWARD_XP} INT, титул «System Architect»`;
+async function loadAllBossQuests(){
+  for(const q of BOSS_QUESTS){
+    bossState[q.key] = await getBossQuestData(q.key);
   }
 }
 
-async function onBossStepToggle(stepId, checked){
-  const prevCompleted = bossData.completed.slice();
+function renderAllBossQuests(){
+  const container = document.getElementById('bossQuestsContainer');
+  container.innerHTML = '';
+  BOSS_QUESTS.forEach(q=>{
+    const data = bossState[q.key] || {completed:[], claimed:false};
+    const doneCount = data.completed.length;
+    const totalCount = q.steps.length;
+
+    const panel = document.createElement('div');
+    panel.className = 'panel';
+    panel.style.borderColor = 'var(--violet)';
+    panel.innerHTML = `
+      <span class="bl" style="border-color:var(--violet);"></span><span class="br" style="border-color:var(--violet);"></span>
+      <div class="eyebrow" style="color:var(--violet);">BOSS QUEST · OPTIONAL${data.claimed?' · ЗАВЕРШЁН':''}</div>
+      <h3 style="font-size:15px;letter-spacing:1px;color:var(--text-hi);margin-bottom:4px;">${q.title}</h3>
+      <p style="font-size:12px;color:var(--text-mid);margin:6px 0 12px;">${q.desc}</p>
+      <div class="boss-steps"></div>
+      <div class="boss-reward" style="font-size:11px;color:var(--text-low);margin-top:8px;"></div>
+    `;
+    container.appendChild(panel);
+
+    const listBox = panel.querySelector('.boss-steps');
+    q.steps.forEach(step=>{
+      const done = data.completed.includes(step.id);
+      const row = document.createElement('div');
+      row.className = 'quest-item'+(done?' done':'');
+      row.innerHTML = `
+        <input type="checkbox" id="boss_${q.key}_${step.id}" ${done?'checked':''} ${data.claimed?'disabled':''}>
+        <label for="boss_${q.key}_${step.id}">${step.text}</label>
+      `;
+      listBox.appendChild(row);
+      row.querySelector('input').addEventListener('change', (e)=>onBossStepToggle(q.key, step.id, e.target.checked));
+    });
+
+    const rewardBox = panel.querySelector('.boss-reward');
+    if(data.claimed){
+      rewardBox.textContent = `Завершено — начислено +${q.rewardXp} ${q.rewardStat}, титул «${q.rewardTitle}»`;
+      rewardBox.style.color = 'var(--violet)';
+    } else {
+      rewardBox.textContent = `Награда: +${q.rewardXp} ${q.rewardStat}, титул «${q.rewardTitle}» (${doneCount}/${totalCount})`;
+    }
+  });
+}
+
+async function onBossStepToggle(questKey, stepId, checked){
+  const quest = BOSS_QUESTS.find(q=>q.key===questKey);
+  const data = bossState[questKey] || {completed:[], claimed:false};
+  const prevCompleted = data.completed.slice();
+
   if(checked){
-    if(!bossData.completed.includes(stepId)) bossData.completed.push(stepId);
+    if(!data.completed.includes(stepId)) data.completed.push(stepId);
   } else {
-    bossData.completed = bossData.completed.filter(id=>id!==stepId);
+    data.completed = data.completed.filter(id=>id!==stepId);
   }
 
-  const ok = await saveBossQuest();
+  const ok = await saveBossQuestData(questKey, data);
   if(!ok){
-    bossData.completed = prevCompleted;
-    renderBossQuest();
+    data.completed = prevCompleted;
+    bossState[questKey] = data;
+    renderAllBossQuests();
     flash('ОШИБКА СОХРАНЕНИЯ — попробуй ещё раз');
     return;
   }
 
-  if(!bossData.claimed && bossData.completed.length === BOSS_STEPS.length){
-    bossData.claimed = true;
-    const claimOk = await saveBossQuest();
+  if(!data.claimed && data.completed.length === quest.steps.length){
+    data.claimed = true;
+    const claimOk = await saveBossQuestData(questKey, data);
     if(claimOk){
-      state.stats.INT += BOSS_REWARD_XP;
+      state.stats[quest.rewardStat] = (state.stats[quest.rewardStat]||0) + quest.rewardXp;
       const profOk = await saveProfile();
       if(profOk){
-        log(`BOSS QUEST COMPLETE: System развёрнут на экране iPhone — +${BOSS_REWARD_XP} INT, титул «System Architect»`);
+        log(`BOSS QUEST COMPLETE: ${quest.completedText} — +${quest.rewardXp} ${quest.rewardStat}, титул «${quest.rewardTitle}»`);
         flash('BOSS QUEST COMPLETE');
         renderStats();
         renderHeader();
       } else {
-        state.stats.INT -= BOSS_REWARD_XP;
+        state.stats[quest.rewardStat] -= quest.rewardXp;
+        data.claimed = false;
         flash('ОШИБКА СОХРАНЕНИЯ НАГРАДЫ — попробуй отметить последний шаг ещё раз');
       }
     } else {
-      bossData.claimed = false;
+      data.claimed = false;
       flash('ОШИБКА СОХРАНЕНИЯ — попробуй ещё раз');
     }
   }
-  renderBossQuest();
+  bossState[questKey] = data;
+  renderAllBossQuests();
 }
 
 const SHORT_LABELS = {
@@ -1074,58 +1136,6 @@ function showAlert(message){
   });
 }
 
-async function migrateLegacy(){
-  if(!window.storage){
-    await showAlert('Старое хранилище недоступно в этом окне.\nОткрой файл так же, как открывал раньше (через Claude), и попробуй снова.');
-    return;
-  }
-  let p, l, mi, bq;
-  try{
-    p = await window.storage.get('profile', false);
-    l = await window.storage.get('log', false);
-    mi = await window.storage.get('marketingIndex', false);
-    bq = await window.storage.get('bossquest:webapp', false);
-  }catch(e){
-    await showAlert('Не удалось прочитать старое хранилище.\n' + e.message);
-    return;
-  }
-
-  if(!p && !l && !mi && !bq){
-    await showAlert('Старый прогресс не найден в этом окне.');
-    return;
-  }
-
-  let summary = [];
-  if(p && p.value){
-    try{
-      const parsed = JSON.parse(p.value);
-      const total = Object.values(parsed.stats||{}).reduce((a,b)=>a+b,0);
-      summary.push('Статы, всего XP: ' + total);
-    }catch(e){}
-  }
-  if(bq && bq.value){
-    try{
-      const parsedBQ = JSON.parse(bq.value);
-      summary.push('Boss Quest: ' + (parsedBQ.completed?parsedBQ.completed.length:0) + '/7 шагов');
-    }catch(e){}
-  }
-
-  const ok = await showConfirm('Найден старый прогресс:\n' + summary.join('\n') + '\n\nПоказать данные для ручного переноса в таблицу?');
-  if(!ok) return;
-
-  const rows = [];
-  if(p && p.value) rows.push('profile\t' + p.value);
-  if(l && l.value) rows.push('log\t' + l.value);
-  if(mi && mi.value) rows.push('marketingIndex\t' + mi.value);
-  if(bq && bq.value) rows.push('bossquest:webapp\t' + bq.value);
-
-  const textarea = document.getElementById('manualExportText');
-  textarea.value = rows.join('\n');
-  document.getElementById('manualExportOverlay').classList.add('show');
-  textarea.focus();
-  textarea.select();
-}
-
 async function checkDetraining(){
   let lastDateStr = null;
   try{
@@ -1184,10 +1194,6 @@ async function init(){
     if(e.key === 'Enter') addCustomQuest();
   });
   document.getElementById('storyBtn').addEventListener('click', openStory);
-  document.getElementById('migrateBtn').addEventListener('click', migrateLegacy);
-  document.getElementById('manualExportClose').addEventListener('click', ()=>{
-    document.getElementById('manualExportOverlay').classList.remove('show');
-  });
   document.getElementById('storyClose').addEventListener('click', closeStory);
   document.getElementById('storyDownloadBtn').addEventListener('click', downloadStoryImage);
   document.getElementById('storyExportBack').addEventListener('click', backToStoryCard);
@@ -1206,31 +1212,17 @@ async function init(){
     flash('ПРОГРЕСС СБРОШЕН');
   });
 
-  bossData = await getBossQuest();
+  await loadAllBossQuests();
 
   renderStats();
   renderHeader();
   renderLog();
   renderQuests();
-  renderBossQuest();
+  renderAllBossQuests();
 }
 
 init();
 </script>
-
-<div class="confirm-overlay" id="manualExportOverlay">
-  <div class="confirm-box" style="width:min(92vw,480px);">
-    <p style="margin-bottom:10px;">Скопируй весь текст ниже (клик в поле → Ctrl+A → Ctrl+C).</p>
-    <textarea id="manualExportText" readonly
-      style="width:100%;height:140px;background:var(--panel-alt);color:var(--text-hi);
-      border:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:11px;
-      padding:8px;margin-bottom:12px;resize:vertical;"></textarea>
-    <p style="margin-bottom:14px;">Открой свою Google Таблицу (лист «data»), встань в самую верхнюю ПУСТУЮ строку в колонке A и вставь (Ctrl+V) — данные сами разойдутся по колонкам A (key) и B (value). Если строка с таким же key уже есть — удали старую строку, чтобы не было дублей.</p>
-    <div class="confirm-actions">
-      <button class="btn primary" id="manualExportClose">Готово, закрыть</button>
-    </div>
-  </div>
-</div>
 
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-box">
