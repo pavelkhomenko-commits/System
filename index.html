@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SYSTEM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --void:#060912;
+    --panel:#0D1526;
+    --panel-alt:#101C33;
+    --line:#233150;
+    --line-bright:#3A5486;
+    --blue:#4C8DFF;
+    --violet:#9B6BFF;
+    --text-hi:#E7ECF9;
+    --text-mid:#8C9BC2;
+    --text-low:#48547A;
+    --ok:#34D8A6;
+    --warn:#FF5C7A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--void);
+    color:var(--text-hi);
+    font-family:'JetBrains Mono', monospace;
+    padding:18px;
+    min-height:100vh;
+    background-image:
+      radial-gradient(circle at 15% -10%, rgba(76,141,255,0.10), transparent 45%),
+      radial-gradient(circle at 100% 10%, rgba(155,107,255,0.08), transparent 40%);
+  }
+  .wrap{max-width:920px;margin:0 auto;}
+
+  /* corner-bracket panel */
+  .panel{
+    position:relative;
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:18px 20px;
+    margin-bottom:14px;
+  }
+  .panel::before,.panel::after,
+  .panel .br,.panel .bl{
+    content:"";
+    position:absolute;
+    width:10px;height:10px;
+    border-color:var(--blue);
+    opacity:.8;
+  }
+  .panel::before{ top:-1px;left:-1px;border-top:2px solid var(--blue);border-left:2px solid var(--blue);}
+  .panel::after{ top:-1px;right:-1px;border-top:2px solid var(--blue);border-right:2px solid var(--blue);}
+  .panel .bl{ bottom:-1px;left:-1px;border-bottom:2px solid var(--blue);border-left:2px solid var(--blue);}
+  .panel .br{ bottom:-1px;right:-1px;border-bottom:2px solid var(--blue);border-right:2px solid var(--blue);}
+
+  .eyebrow{font-size:11px;letter-spacing:2px;color:var(--text-low);margin-bottom:4px;}
+  h1,h2,h3{font-family:'Orbitron',sans-serif;margin:0;}
+
+  /* header */
+  .header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;}
+  .rank-badge{
+    display:inline-flex;align-items:center;gap:10px;
+    border:1px solid var(--line-bright);
+    padding:8px 14px;
+    background:var(--panel-alt);
+  }
+  .rank-letter{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:800;color:var(--violet);
+    text-shadow:0 0 12px rgba(155,107,255,.6);}
+  .rank-label{font-size:11px;color:var(--text-mid);letter-spacing:1px;}
+  .sys-title{font-size:26px;font-weight:800;letter-spacing:3px;color:var(--text-hi);
+    text-shadow:0 0 16px rgba(76,141,255,.35);}
+  .hunter-level{font-size:13px;color:var(--text-mid);}
+  .hunter-level b{color:var(--blue);font-family:'Orbitron',sans-serif;}
+  .streak-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    border:1px solid var(--line);padding:4px 10px;
+    background:var(--panel-alt);font-size:11px;color:var(--text-mid);
+  }
+  .streak-badge.active{border-color:#FF9A4C;}
+  .streak-fire{font-size:13px;filter:grayscale(1);opacity:.5;}
+  .streak-badge.active .streak-fire{filter:none;opacity:1;}
+  .streak-num{font-family:'Orbitron',sans-serif;font-size:14px;color:var(--text-mid);}
+  .streak-badge.active .streak-num{color:#FF9A4C;text-shadow:0 0 10px rgba(255,154,76,.5);}
+
+  .rankbar-track{height:6px;background:var(--panel-alt);border:1px solid var(--line);margin-top:12px;overflow:hidden;}
+  .rankbar-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--violet));width:0%;transition:width .6s ease;}
+  .rankbar-caption{font-size:11px;color:var(--text-low);margin-top:6px;display:flex;justify-content:space-between;}
+
+  /* grid */
+  .grid{display:grid;grid-template-columns:1fr;gap:14px;}
+  @media(min-width:760px){.grid{grid-template-columns:1fr 1fr;}}
+
+  /* stats */
+  .stat-row{margin-bottom:12px;}
+  .stat-row:last-child{margin-bottom:0;}
+  .stat-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+  .stat-name{color:var(--text-hi);font-weight:700;letter-spacing:1px;}
+  .stat-meta{color:var(--text-low);}
+  .bar-track{height:8px;background:var(--panel-alt);border:1px solid var(--line);overflow:hidden;}
+  .bar-fill{height:100%;background:var(--blue);width:0%;transition:width .5s ease;}
+
+  /* quest list */
+  .quest-item{
+    display:flex;align-items:flex-start;gap:10px;
+    padding:9px 0;border-bottom:1px solid var(--line);
+    font-size:13px;
+  }
+  .quest-item:last-of-type{border-bottom:none;}
+  .quest-item input[type=checkbox]{
+    appearance:none;-webkit-appearance:none;
+    width:16px;height:16px;min-width:16px;margin-top:2px;
+    border:1px solid var(--line-bright);background:var(--panel-alt);
+    cursor:pointer;position:relative;
+  }
+  .quest-item input[type=checkbox]:checked{background:var(--ok);border-color:var(--ok);}
+  .quest-item input[type=checkbox]:checked::after{
+    content:"✓";position:absolute;top:-3px;left:2px;font-size:12px;color:var(--void);font-weight:700;
+  }
+  .quest-item.done label{color:var(--text-low);text-decoration:line-through;}
+  .quest-item label{cursor:pointer;flex:1;}
+  .quest-xp{font-size:10px;color:var(--text-low);white-space:nowrap;}
+
+  .controls{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px;}
+  .toggle-btn{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    background:var(--panel-alt);color:var(--text-mid);
+    border:1px solid var(--line);padding:6px 10px;cursor:pointer;
+  }
+  .toggle-btn.active{color:var(--blue);border-color:var(--blue);box-shadow:0 0 8px rgba(76,141,255,.25) inset;}
+
+  select{
+    font-family:'JetBrains Mono',monospace;font-size:12px;
+    background:var(--panel-alt);color:var(--text-hi);
+    border:1px solid var(--line);padding:6px 8px;
+  }
+
+  .btn{
+    font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:1px;
+    background:var(--panel-alt);color:var(--text-hi);
+    border:1px solid var(--line-bright);padding:9px 16px;cursor:pointer;
+    transition:all .2s ease;
+  }
+  .btn:hover{border-color:var(--blue);color:var(--blue);}
+  .btn:disabled{opacity:.35;cursor:not-allowed;border-color:var(--line);color:var(--text-low);}
+  .btn:disabled:hover{border-color:var(--line);color:var(--text-low);}
+  .btn.primary{border-color:var(--ok);color:var(--ok);}
+  .btn.primary:hover{box-shadow:0 0 12px rgba(52,216,166,.35);}
+  .btn.warn{border-color:var(--warn);color:var(--warn);}
+
+  .rest-row{display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:10px;}
+  .hint{font-size:11px;color:var(--text-low);}
+
+  .log{max-height:170px;overflow-y:auto;font-size:12px;}
+  .log-line{padding:4px 0;border-bottom:1px solid var(--line);color:var(--text-mid);}
+  .log-line:last-child{border-bottom:none;}
+  .log-line .t{color:var(--text-low);margin-right:8px;}
+  .log-empty{color:var(--text-low);font-size:12px;}
+
+  .flash{
+    position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-10px);
+    background:var(--panel);border:1px solid var(--blue);padding:10px 18px;
+    font-family:'Orbitron',sans-serif;font-size:12px;color:var(--blue);letter-spacing:1px;
+    opacity:0;pointer-events:none;transition:all .35s ease;z-index:10;
+    box-shadow:0 0 20px rgba(76,141,255,.25);
+  }
+  .flash.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .reset-link{font-size:10px;color:var(--text-low);text-decoration:underline;cursor:pointer;background:none;border:none;font-family:inherit;}
+  .footer-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+
+  /* story / share card */
+  .story-overlay{
+    position:fixed;inset:0;background:rgba(3,5,12,.94);
+    display:none;align-items:center;justify-content:center;
+    z-index:100;padding:20px;
+  }
+  .story-overlay.show{display:flex;}
+  .story-close{
+    position:fixed;top:18px;right:18px;z-index:101;
+    width:34px;height:34px;border-radius:50%;
+    background:var(--panel-alt);border:1px solid var(--line-bright);
+    color:var(--text-hi);font-size:15px;cursor:pointer;
+  }
+  .story-card{
+    position:relative;
+    width:min(94vw, 405px);
+    aspect-ratio:9/16;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(76,141,255,.14), transparent 45%),
+      radial-gradient(circle at 90% 100%, rgba(155,107,255,.12), transparent 45%),
+      linear-gradient(180deg, #050810 0%, #0A1122 55%, #050810 100%);
+    border:1px solid var(--line-bright);
+    padding:32px 26px;
+    display:flex;flex-direction:column;
+    overflow:hidden;
+    box-shadow:0 0 50px rgba(76,141,255,.15);
+  }
+  .story-corner{position:absolute;width:16px;height:16px;border-color:var(--blue);opacity:.9;}
+  .story-corner.tl{top:14px;left:14px;border-top:2px solid var(--blue);border-left:2px solid var(--blue);}
+  .story-corner.tr{top:14px;right:14px;border-top:2px solid var(--blue);border-right:2px solid var(--blue);}
+  .story-corner.bl{bottom:14px;left:14px;border-bottom:2px solid var(--blue);border-left:2px solid var(--blue);}
+  .story-corner.br{bottom:14px;right:14px;border-bottom:2px solid var(--blue);border-right:2px solid var(--blue);}
+
+  .story-top{display:flex;justify-content:space-between;align-items:center;}
+  .story-eyebrow{font-size:11px;letter-spacing:2px;color:var(--text-mid);}
+  .story-date{font-size:11px;color:var(--text-low);}
+
+  .story-rank-block{margin-top:auto;padding-top:18px;}
+  .story-rank-row{display:flex;align-items:baseline;gap:14px;}
+  .story-rank-letter{
+    font-family:'Orbitron',sans-serif;font-weight:800;font-size:88px;line-height:1;
+    color:var(--violet);text-shadow:0 0 30px rgba(155,107,255,.55);
+  }
+  .story-lv{font-family:'Orbitron',sans-serif;font-size:18px;color:var(--blue);letter-spacing:1px;}
+  .story-streak{font-family:'Orbitron',sans-serif;font-size:16px;color:#FF9A4C;letter-spacing:.5px;margin-left:auto;}
+  .story-rankbar-track{height:5px;background:rgba(255,255,255,.06);border:1px solid var(--line);margin-top:10px;overflow:hidden;}
+  .story-rankbar-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--violet));width:0%;}
+
+  .story-list{margin-top:24px;display:flex;flex-direction:column;gap:9px;flex:1;overflow:hidden;}
+  .story-item{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:13px;padding:8px 12px;
+    background:rgba(255,255,255,.03);border:1px solid var(--line);
+  }
+  .story-item .lbl{color:var(--text-hi);}
+  .story-item .lbl::before{content:"✓ ";color:var(--ok);}
+  .story-item .val{color:var(--blue);font-size:11px;white-space:nowrap;}
+  .story-empty{font-size:12px;color:var(--text-low);padding:8px 0;}
+
+  .story-footer{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .story-xp-today{font-family:'Orbitron',sans-serif;font-size:22px;color:var(--ok);text-shadow:0 0 16px rgba(52,216,166,.4);}
+  .story-watermark{font-size:9px;letter-spacing:3px;color:var(--text-low);}
+  .story-download{
+    position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+    z-index:101;
+  }
+  .confirm-overlay{
+    position:fixed;inset:0;background:rgba(3,5,12,.92);
+    display:none;align-items:center;justify-content:center;
+    z-index:200;padding:20px;
+  }
+  .confirm-overlay.show{display:flex;}
+  .confirm-box{
+    width:min(90vw,340px);
+    background:var(--panel);border:1px solid var(--line-bright);
+    padding:22px 20px;
+  }
+  .confirm-box p{
+    font-size:13px;color:var(--text-hi);line-height:1.5;
+    white-space:pre-line;margin:0 0 18px;
+  }
+  .confirm-actions{display:flex;gap:10px;justify-content:flex-end;}
+  .story-export{
+    width:min(94vw, 405px);
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+  }
+  .story-export img{
+    width:100%;border:1px solid var(--line-bright);
+    box-shadow:0 0 40px rgba(76,141,255,.15);
+  }
+  .story-export-hint{
+    font-size:12px;color:var(--text-mid);text-align:center;
+    max-width:320px;line-height:1.5;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="flash" id="flash"></div>
+
+  <div class="panel"><span class="bl"></span><span class="br"></span>
+    <div class="header">
+      <div>
+        <div class="eyebrow">СТАТУС ОХОТНИКА</div>
+        <div class="sys-title">SYSTEM</div>
+        <div class="hunter-level" style="margin-top:6px;">Уровень <b id="hunterLevel">1</b> · Всего XP: <span id="totalXP">0</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+        <div class="rank-badge">
+          <span class="rank-letter" id="rankLetter">E</span>
+          <span class="rank-label">RANK</span>
+        </div>
+        <div class="streak-badge" id="streakBadge">
+          <span class="streak-fire">🔥</span>
+          <span class="streak-num" id="streakNum">0</span>
+          <span class="streak-label">дн. подряд</span>
+        </div>
+      </div>
+    </div>
+    <div class="rankbar-track"><div class="rankbar-fill" id="rankbarFill"></div></div>
+    <div class="rankbar-caption"><span id="rankNow">E</span><span id="rankNext">D</span></div>
+    <button class="btn" id="storyBtn" style="margin-top:12px;width:100%;">📖 ПОКАЗАТЬ КАК STORY</button>
+    <button class="btn" id="migrateBtn" style="margin-top:8px;width:100%;font-size:10px;opacity:.7;">↺ Восстановить старый прогресс (если открыто в Claude)</button>
+  </div>
+
+  <div class="grid">
+    <div class="panel"><span class="bl"></span><span class="br"></span>
+      <div class="eyebrow">СТАТЫ</div>
+      <div id="statsList"></div>
+    </div>
+
+    <div class="panel"><span class="bl"></span><span class="br"></span>
+      <div class="eyebrow" id="todayLabel">СЕГОДНЯШНИЙ QUEST LOG</div>
+
+      <div class="controls">
+        <button class="toggle-btn" id="trainToggle">Тренировка сегодня: НЕТ</button>
+        <select id="topicSelect">
+          <option value="marketing">Тема: Маркетинг</option>
+          <option value="ai">Тема: AI</option>
+          <option value="crystal">Тема: Кристаллография</option>
+        </select>
+      </div>
+
+      <div id="questList"></div>
+
+      <div class="controls" style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px;">
+        <input type="text" id="customQuestInput" placeholder="Что ещё сделал?"
+          style="flex:1;min-width:140px;font-family:'JetBrains Mono',monospace;font-size:12px;
+          background:var(--panel-alt);color:var(--text-hi);border:1px solid var(--line);padding:6px 8px;">
+        <select id="customQuestStat">
+          <option value="STR">STR</option>
+          <option value="AGI">AGI</option>
+          <option value="VIT">VIT</option>
+          <option value="END" selected>END</option>
+          <option value="INT">INT</option>
+          <option value="WIS">WIS</option>
+        </select>
+        <button class="btn" id="addCustomQuestBtn">+ Добавить (+5 XP)</button>
+      </div>
+
+      <div class="rest-row">
+        <button class="btn primary" id="restBtn">REST QUEST</button>
+        <span class="hint">Колено / нет сил — не штраф</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="border-color:var(--violet);">
+    <span class="bl" style="border-color:var(--violet);"></span><span class="br" style="border-color:var(--violet);"></span>
+    <div class="eyebrow" style="color:var(--violet);">BOSS QUEST · OPTIONAL</div>
+    <h3 style="font-size:15px;letter-spacing:1px;color:var(--text-hi);margin-bottom:4px;">Развернуть SYSTEM как веб-приложение на экране iPhone</h3>
+    <p style="font-size:12px;color:var(--text-mid);margin:6px 0 12px;">Не daily-квест. Открывается, когда дойдут руки. Прокачивает INT через практику работы с ИИ/скриптами/деплоем.</p>
+    <div id="bossQuestList"></div>
+    <div id="bossQuestReward" style="font-size:11px;color:var(--text-low);margin-top:8px;"></div>
+  </div>
+
+  <div class="panel"><span class="bl"></span><span class="br"></span>
+    <div class="eyebrow">SYSTEM LOG</div>
+    <div class="log" id="logBox"><div class="log-empty">Записей пока нет.</div></div>
+    <div class="footer-row">
+      <span class="hint">Прогресс сохраняется автоматически</span>
+      <button class="reset-link" id="resetLink">сбросить весь прогресс</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ==== ПОДСТАВЬ СВОЙ URL ИЗ APPS SCRIPT DEPLOY (заканчивается на /exec) ====
+const API_URL = "https://script.google.com/macros/s/AKfycbzKCmRIvE_7f6hI31njPDWkfjzT5eKN7Rjn996ova_h4EAEk4P8cdtWp8qlXtjhJ16b/exec";
+// ==========================================================================
+
+async function storageGet(key){
+  try{
+    const res = await fetch(`${API_URL}?action=get&key=${encodeURIComponent(key)}`);
+    if(!res.ok) return null;
+    const data = await res.json();
+    if(data && data.value !== null && data.value !== undefined && data.value !== '') return {value: data.value};
+    return null;
+  }catch(e){ console.error('storageGet failed', e); return null; }
+}
+async function storageSet(key, value){
+  try{
+    const res = await fetch(`${API_URL}?action=set&key=${encodeURIComponent(key)}&value=${encodeURIComponent(value)}`);
+    if(!res.ok) return null;
+    const data = await res.json();
+    return (data && data.saved) ? {key, value} : null;
+  }catch(e){ console.error('storageSet failed', e); return null; }
+}
+
+const MARKETING_TOPICS = [
+  'Систематизация стратегии в документ (бриф/позиционирование/контент-план)',
+  'Cold-start платформ: концентрация до ликвидности',
+  'Программное SEO + мультиканальная семантика (Директ/ASO/Telegram)',
+  'Доверие и онбординг-воронка (claim/SLA/порядок запроса контактов)',
+  'Монетизация и enterprise-продажи (pilot-to-scale, compliance)',
+  'Рекламный compliance и creative testing',
+  'Управление маркетинг-командой: цели и делегирование',
+  'ИИ в маркетинговых workflow (мост с AI-треком)',
+];
+const MARKETING_TOPICS_SHORT = [
+  'Систематизация стратегии',
+  'Cold-start платформ',
+  'Программное SEO',
+  'Доверие и онбординг',
+  'Монетизация',
+  'Реклам. compliance',
+  'Управление командой',
+  'ИИ в маркетинге',
+];
+let marketingIndex = 0;
+async function loadMarketingIndex(){
+  try{
+    const r = await storageGet('marketingIndex');
+    if(r && r.value) marketingIndex = JSON.parse(r.value);
+  }catch(e){ marketingIndex = 0; }
+}
+async function advanceMarketingIndex(){
+  marketingIndex = (marketingIndex+1) % MARKETING_TOPICS.length;
+  try{ await storageSet('marketingIndex', JSON.stringify(marketingIndex)); }
+  catch(e){ console.error('save marketing index failed', e); }
+}
+
+const STATS = ['STR','AGI','VIT','END','INT','WIS'];
+const STAT_LABEL = {STR:'Сила удара',AGI:'Взрывная сила',VIT:'Выносливость',END:'Стойкость',INT:'Интеллект',WIS:'Дисциплина'};
+const RANKS = [
+  {letter:'E', min:0},
+  {letter:'D', min:300},
+  {letter:'C', min:800},
+  {letter:'B', min:1500},
+  {letter:'A', min:2500},
+  {letter:'S', min:4000},
+];
+
+let state = {
+  stats: Object.fromEntries(STATS.map(s=>[s,0])),
+  log: [],
+};
+
+function todayKey(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+
+function levelFromXP(xp){
+  return Math.floor(xp/100)+1;
+}
+function xpIntoLevel(xp){
+  return xp%100;
+}
+
+async function loadState(){
+  try{
+    const r = await storageGet('profile');
+    if(r && r.value){
+      const parsed = JSON.parse(r.value);
+      state.stats = parsed.stats || state.stats;
+    }
+  }catch(e){ /* no profile yet */ }
+  try{
+    const r = await storageGet('log');
+    if(r && r.value){ state.log = JSON.parse(r.value); }
+  }catch(e){ /* no log yet */ }
+}
+
+async function saveProfile(){
+  try{
+    const r = await storageSet('profile', JSON.stringify({stats:state.stats}));
+    return !!r;
+  } catch(e){ console.error('save profile failed', e); return false; }
+}
+async function saveLog(){
+  try{ await storageSet('log', JSON.stringify(state.log.slice(-10))); }
+  catch(e){ console.error('save log failed', e); }
+}
+async function getDay(key){
+  try{
+    const r = await storageGet('day:'+key);
+    if(r && r.value){
+      const parsed = JSON.parse(r.value);
+      parsed.custom = parsed.custom || [];
+      return parsed;
+    }
+  }catch(e){ /* none yet */ }
+  return {completed:[], rest:false, custom:[]};
+}
+async function saveDay(key,data){
+  try{
+    const r = await storageSet('day:'+key, JSON.stringify(data));
+    return !!r;
+  } catch(e){ console.error('save day failed', e); return false; }
+}
+
+function totalXP(){
+  return STATS.reduce((sum,s)=>sum+state.stats[s],0);
+}
+function currentRank(){
+  const t = totalXP();
+  let cur = RANKS[0], next = RANKS[1];
+  for(let i=0;i<RANKS.length;i++){
+    if(t>=RANKS[i].min){ cur=RANKS[i]; next=RANKS[i+1]||null; }
+  }
+  return {cur,next,t};
+}
+
+function flash(text){
+  const el = document.getElementById('flash');
+  el.textContent = text;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 1800);
+}
+
+function log(text){
+  const time = new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  state.log.push({t:time,text});
+  saveLog();
+  renderLog();
+}
+
+function renderHeader(){
+  const t = totalXP();
+  document.getElementById('totalXP').textContent = t;
+  document.getElementById('hunterLevel').textContent = Math.floor(t/150)+1;
+  const {cur,next} = currentRank();
+  document.getElementById('rankLetter').textContent = cur.letter;
+  document.getElementById('rankNow').textContent = cur.letter;
+  if(next){
+    document.getElementById('rankNext').textContent = next.letter;
+    const span = next.min - cur.min;
+    const progress = Math.min(100, Math.round(((t-cur.min)/span)*100));
+    document.getElementById('rankbarFill').style.width = progress+'%';
+  } else {
+    document.getElementById('rankNext').textContent = 'MAX';
+    document.getElementById('rankbarFill').style.width = '100%';
+  }
+}
+
+function renderStats(){
+  const box = document.getElementById('statsList');
+  box.innerHTML = '';
+  STATS.forEach(s=>{
+    const xp = state.stats[s];
+    const lvl = levelFromXP(xp);
+    const pct = xpIntoLevel(xp);
+    const row = document.createElement('div');
+    row.className = 'stat-row';
+    row.innerHTML = `
+      <div class="stat-top">
+        <span class="stat-name">${s} <span style="color:var(--text-low);font-weight:400;">· ${STAT_LABEL[s]}</span></span>
+        <span class="stat-meta">Lv.${lvl} · ${pct}/100</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;"></div></div>
+    `;
+    box.appendChild(row);
+  });
+}
+
+function renderLog(){
+  const box = document.getElementById('logBox');
+  if(state.log.length===0){
+    box.innerHTML = '<div class="log-empty">Записей пока нет.</div>';
+    return;
+  }
+  box.innerHTML = state.log.slice().reverse().map(l=>
+    `<div class="log-line"><span class="t">${l.t}</span>${l.text}</div>`
+  ).join('');
+}
+
+// ---- quest building ----
+function buildQuestsForToday(trainingToday, topic){
+  const day = new Date().getDay(); // 0 Sun .. 6 Sat
+  const isWeekend = (day===0 || day===6);
+  const quests = [];
+
+  quests.push({id:'warmup', text:'Разминка 10 мин', stat:'END', xp:5});
+
+  if(!isWeekend){
+    if(day===1 || day===4){ // Mon / Thu
+      quests.push({id:'legs', text:'Ноги (стабилизация): приседания на счёт, выпады, мостик, икры', stat:'AGI', xp:15, shortLabel:'Тренировка быстрого перемещения'});
+    } else if(day===2){ // Tue
+      quests.push({id:'arms', text:'Руки/спина/удар (основа): хлопок-отжимания, подтягивания, скрутки, вис. Бонус: хват/запястья', stat:'STR', xp:15, shortLabel:'Тренировка взрывного удара рук'});
+    } else if(day===5){ // Fri
+      quests.push({id:'arms', text:'Руки/спина/удар (основа): хлопок-отжимания, подтягивания, дровосек с резиной, вис. Бонус: хват/запястья', stat:'STR', xp:15, shortLabel:'Тренировка взрывного удара рук'});
+    } else if(day===3){ // Wed
+      quests.push({id:'run', text:'Лёгкий бег 20-30 мин (разговорный темп)', stat:'VIT', xp:15, shortLabel:'Подготовка к марафону'});
+    }
+
+    const topicLabel = topic==='marketing'
+      ? 'Маркетинг — ' + MARKETING_TOPICS[marketingIndex]
+      : {ai:'AI', crystal:'Кристаллография'}[topic];
+    const studyShort = topic==='marketing'
+      ? 'Маркетинг: ' + MARKETING_TOPICS_SHORT[marketingIndex]
+      : {ai:'AI', crystal:'Кристаллография'}[topic];
+    quests.push({id:'study', text:'Учебный блок: '+topicLabel, stat:'INT', xp:10, isMarketing: topic==='marketing', shortLabel: studyShort});
+
+    if(trainingToday){
+      quests.push({id:'bag', text:'Груша перед тренировкой (разогрев+техника)', stat:'STR', xp:5});
+      quests.push({id:'training', text:'Тренировка (айкибудо / катори синто рю)', stat:'STR', xp:20});
+    } else {
+      quests.push({id:'evening', text:'Доп. блок вечером (учёба или лёгкий бег)', stat:'VIT', xp:10});
+    }
+  } else {
+    quests.push({id:'longrun', text:'Лёгкий бег / прогулка', stat:'VIT', xp:10, shortLabel:'Подготовка к марафону'});
+    quests.push({id:'crystal', text:'Кристаллография — глубокая сессия 60-90 мин', stat:'INT', xp:15, shortLabel:'Кристаллография'});
+    if(trainingToday){
+      quests.push({id:'training_wk', text:'Тренировка (10:00–13:00)', stat:'STR', xp:20});
+    }
+  }
+
+  return quests;
+}
+
+let currentQuests = [];
+let dayData = {completed:[], rest:false};
+
+async function renderQuests(){
+  const restBtn = document.getElementById('restBtn');
+  restBtn.disabled = !!dayData.rest;
+  restBtn.textContent = dayData.rest ? 'REST QUEST ✓ ЗАСЧИТАН' : 'REST QUEST';
+
+  const trainingToday = document.getElementById('trainToggle').classList.contains('active');
+  const topic = document.getElementById('topicSelect').value;
+  currentQuests = buildQuestsForToday(trainingToday, topic).concat(dayData.custom || []);
+
+  const box = document.getElementById('questList');
+  box.innerHTML = '';
+
+  if(dayData.rest){
+    box.innerHTML = '<div class="quest-item"><label style="color:var(--ok);">Сегодня отмечен как REST QUEST — квесты не требуются.</label></div>';
+    return;
+  }
+
+  currentQuests.forEach(q=>{
+    const done = dayData.completed.includes(q.id);
+    const isCustom = q.id.startsWith('custom-');
+    const row = document.createElement('div');
+    row.className = 'quest-item'+(done?' done':'');
+    if(isCustom){
+      row.innerHTML = `
+        <span style="color:var(--ok);margin-top:2px;">✓</span>
+        <label style="text-decoration:line-through;color:var(--text-low);">${q.text} <span style="opacity:.6;">(добавлено вручную)</span></label>
+        <span class="quest-xp">+${q.xp} ${q.stat}</span>
+      `;
+      box.appendChild(row);
+      return;
+    }
+    row.innerHTML = `
+      <input type="checkbox" id="q_${q.id}" ${done?'checked':''}>
+      <label for="q_${q.id}">${q.text}</label>
+      <span class="quest-xp">+${q.xp} ${q.stat}</span>
+    `;
+    box.appendChild(row);
+    row.querySelector('input').addEventListener('change', (e)=>onQuestToggle(q, e.target.checked));
+  });
+}
+
+let currentStreak = 0;
+
+function dateStrToDate(s){ return new Date(s + 'T00:00:00'); }
+
+async function touchEngagement(){
+  const today = todayKey();
+  try{
+    const lastRes = await storageGet('lastEngagementDate');
+    const lastDateStr = lastRes ? lastRes.value : null;
+
+    if(lastDateStr === today){
+      // already touched today, streak unchanged
+    } else if(lastDateStr){
+      const diffDays = Math.round((dateStrToDate(today) - dateStrToDate(lastDateStr)) / (1000*60*60*24));
+      if(diffDays === 1){
+        currentStreak = currentStreak + 1;
+      } else {
+        currentStreak = 1;
+      }
+      await storageSet('streakCount', String(currentStreak));
+    } else {
+      currentStreak = 1;
+      await storageSet('streakCount', String(currentStreak));
+    }
+
+    await storageSet('lastEngagementDate', today);
+    renderStreak();
+  }catch(e){ console.error('touchEngagement failed', e); }
+}
+
+async function loadStreak(){
+  try{
+    const lastRes = await storageGet('lastEngagementDate');
+    const streakRes = await storageGet('streakCount');
+    const lastDateStr = lastRes ? lastRes.value : null;
+    let streak = streakRes ? parseInt(streakRes.value, 10) || 0 : 0;
+
+    if(lastDateStr){
+      const today = todayKey();
+      const diffDays = Math.round((dateStrToDate(today) - dateStrToDate(lastDateStr)) / (1000*60*60*24));
+      // if more than 1 day has passed since last engagement (and it wasn't today/yesterday), streak is broken
+      if(diffDays > 1){ streak = 0; }
+    } else {
+      streak = 0;
+    }
+    currentStreak = streak;
+  }catch(e){ currentStreak = 0; }
+  renderStreak();
+}
+
+function renderStreak(){
+  const badge = document.getElementById('streakBadge');
+  const num = document.getElementById('streakNum');
+  if(!badge || !num) return;
+  num.textContent = currentStreak;
+  if(currentStreak > 0){ badge.classList.add('active'); }
+  else { badge.classList.remove('active'); }
+}
+
+async function onQuestToggle(quest, checked){
+  const key = todayKey();
+  const alreadyDone = dayData.completed.includes(quest.id);
+  if(checked===alreadyDone) return; // no real change
+
+  const prevCompleted = dayData.completed.slice();
+  const prevXP = state.stats[quest.stat];
+
+  if(checked){ dayData.completed.push(quest.id); }
+  else { dayData.completed = dayData.completed.filter(id=>id!==quest.id); }
+
+  const dayOk = await saveDay(key, dayData);
+  if(!dayOk){
+    dayData.completed = prevCompleted;
+    renderQuests();
+    flash('ОШИБКА СОХРАНЕНИЯ — попробуй ещё раз');
+    return;
+  }
+
+  if(checked){ state.stats[quest.stat] += quest.xp; }
+  else { state.stats[quest.stat] = Math.max(0, state.stats[quest.stat]-quest.xp); }
+
+  const profOk = await saveProfile();
+  if(!profOk){
+    state.stats[quest.stat] = prevXP;
+    dayData.completed = prevCompleted;
+    await saveDay(key, dayData);
+    flash('ОШИБКА СОХРАНЕНИЯ — попробуй ещё раз');
+    renderStats();
+    renderHeader();
+    renderQuests();
+    return;
+  }
+
+  if(checked){
+    const logLabel = quest.shortLabel || SHORT_LABELS[quest.id] || quest.text;
+    log(`Quest Complete: ${logLabel} — +${quest.xp} ${quest.stat}`);
+    flash(`QUEST COMPLETE +${quest.xp} ${quest.stat}`);
+    if(quest.isMarketing){ await advanceMarketingIndex(); }
+    await touchEngagement();
+  }
+  renderStats();
+  renderHeader();
+  renderQuests();
+}
+
+async function addCustomQuest(){
+  const input = document.getElementById('customQuestInput');
+  const statSel = document.getElementById('customQuestStat');
+  const text = input.value.trim();
+  if(!text) return;
+  const stat = statSel.value;
+  const quest = {id:'custom-'+Date.now(), text, stat, xp:5, shortLabel:text};
+
+  const key = todayKey();
+  const prevCustom = (dayData.custom||[]).slice();
+  const prevCompleted = dayData.completed.slice();
+  dayData.custom = prevCustom.concat([quest]);
+  dayData.completed = prevCompleted.concat([quest.id]);
+
+  const dayOk = await saveDay(key, dayData);
+  if(!dayOk){
+    dayData.custom = prevCustom;
+    dayData.completed = prevCompleted;
+    flash('ОШИБКА СОХРАНЕНИЯ — попробуй ещё раз');
+    return;
+  }
+
+  const prevXP = state.stats[stat] || 0;
+  state.stats[stat] = prevXP + quest.xp;
+  const profOk = await saveProfile();
+  if(!profOk){
+    state.stats[stat] = prevXP;
+    dayData.custom = prevCustom;
+    dayData.completed = prevCompleted;
+    await saveDay(key, dayData);
+    flash('ОШИБКА СОХРАНЕНИЯ — попробуй ещё раз');
+    renderStats(); renderQuests();
+    return;
+  }
+
+  log(`Quest Complete: ${text} — +${quest.xp} ${stat}`);
+  flash(`+${quest.xp} ${stat}`);
+  await touchEngagement();
+  input.value = '';
+  renderStats();
+  renderHeader();
+  renderQuests();
+}
+
+async function onRest(){
+  if(dayData.rest) return; // already claimed today — idempotent
+  const key = todayKey();
+  dayData.rest = true;
+  const dayOk = await saveDay(key, dayData);
+  if(!dayOk){
+    dayData.rest = false;
+    flash('ОШИБКА СОХРАНЕНИЯ — попробуй ещё раз');
+    return;
+  }
+  if(!state.stats.WIS){ state.stats.WIS = 0; }
+  state.stats.WIS += 15;
+  const profOk = await saveProfile();
+  if(!profOk){
+    state.stats.WIS -= 15;
+    dayData.rest = false;
+    await saveDay(key, dayData);
+    flash('ОШИБКА СОХРАНЕНИЯ — попробуй ещё раз');
+    renderQuests();
+    return;
+  }
+  log('Rest Quest засчитан — забота о себе тоже прогресс. +15 WIS');
+  flash('REST QUEST COMPLETE +15 WIS');
+  await touchEngagement();
+  renderStats();
+  renderHeader();
+  renderQuests();
+}
+
+// ---- boss quest: deploy as home-screen web app ----
+const BOSS_STEPS = [
+  {id:'sheet', text:'Создать Google Sheet для хранения прогресса'},
+  {id:'script', text:'Написать Google Apps Script (Web App): приём и выдача данных'},
+  {id:'deploy', text:'Задеплоить Apps Script как Web App, получить URL'},
+  {id:'connect', text:'Подключить HTML-виджет System Window к этому URL вместо window.storage'},
+  {id:'host', text:'Разместить страницу (GitHub Pages/Vercel, либо прямой URL Apps Script)'},
+  {id:'homescreen', text:'Добавить страницу на экран iPhone через Safari → «На экран Домой»'},
+  {id:'verify', text:'Проверить: закрыл вкладку, открыл заново — прогресс на месте'},
+];
+const BOSS_REWARD_XP = 100;
+let bossData = {completed:[], claimed:false};
+
+async function getBossQuest(){
+  try{
+    const r = await storageGet('bossquest:webapp');
+    if(r && r.value) return JSON.parse(r.value);
+  }catch(e){ /* none yet */ }
+  return {completed:[], claimed:false};
+}
+async function saveBossQuest(){
+  try{
+    const r = await storageSet('bossquest:webapp', JSON.stringify(bossData));
+    return !!r;
+  } catch(e){ console.error('save boss quest failed', e); return false; }
+}
+
+function renderBossQuest(){
+  const box = document.getElementById('bossQuestList');
+  box.innerHTML = '';
+  BOSS_STEPS.forEach(step=>{
+    const done = bossData.completed.includes(step.id);
+    const row = document.createElement('div');
+    row.className = 'quest-item'+(done?' done':'');
+    row.innerHTML = `
+      <input type="checkbox" id="boss_${step.id}" ${done?'checked':''} ${bossData.claimed?'disabled':''}>
+      <label for="boss_${step.id}">${step.text}</label>
+    `;
+    box.appendChild(row);
+    row.querySelector('input').addEventListener('change', (e)=>onBossStepToggle(step.id, e.target.checked));
+  });
+  const rewardBox = document.getElementById('bossQuestReward');
+  if(bossData.claimed){
+    rewardBox.textContent = `Завершено — начислено +${BOSS_REWARD_XP} INT, титул «System Architect»`;
+    rewardBox.style.color = 'var(--violet)';
+  } else {
+    rewardBox.textContent = `Награда за полное завершение: +${BOSS_REWARD_XP} INT, титул «System Architect»`;
+  }
+}
+
+async function onBossStepToggle(stepId, checked){
+  const prevCompleted = bossData.completed.slice();
+  if(checked){
+    if(!bossData.completed.includes(stepId)) bossData.completed.push(stepId);
+  } else {
+    bossData.completed = bossData.completed.filter(id=>id!==stepId);
+  }
+
+  const ok = await saveBossQuest();
+  if(!ok){
+    bossData.completed = prevCompleted;
+    renderBossQuest();
+    flash('ОШИБКА СОХРАНЕНИЯ — попробуй ещё раз');
+    return;
+  }
+
+  if(!bossData.claimed && bossData.completed.length === BOSS_STEPS.length){
+    bossData.claimed = true;
+    const claimOk = await saveBossQuest();
+    if(claimOk){
+      state.stats.INT += BOSS_REWARD_XP;
+      const profOk = await saveProfile();
+      if(profOk){
+        log(`BOSS QUEST COMPLETE: System развёрнут на экране iPhone — +${BOSS_REWARD_XP} INT, титул «System Architect»`);
+        flash('BOSS QUEST COMPLETE');
+        renderStats();
+        renderHeader();
+      } else {
+        state.stats.INT -= BOSS_REWARD_XP;
+        flash('ОШИБКА СОХРАНЕНИЯ НАГРАДЫ — попробуй отметить последний шаг ещё раз');
+      }
+    } else {
+      bossData.claimed = false;
+      flash('ОШИБКА СОХРАНЕНИЯ — попробуй ещё раз');
+    }
+  }
+  renderBossQuest();
+}
+
+const SHORT_LABELS = {
+  warmup:'Разминка', legs:'Ноги', arms:'Руки / удар', run:'Бег',
+  study:'Учёба', bag:'Груша', training:'Тренировка', training_wk:'Тренировка',
+  evening:'Доп. блок', longrun:'Бег / прогулка', crystal:'Кристаллография',
+};
+
+function openStory(){
+  const {cur,next,t} = currentRank();
+  document.getElementById('storyRankLetter').textContent = cur.letter;
+  document.getElementById('storyLevel').textContent = 'Lv.' + (Math.floor(t/150)+1);
+  document.getElementById('storyStreak').textContent = '🔥 ' + currentStreak;
+  document.getElementById('storyDate').textContent =
+    new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
+
+  if(next){
+    const span = next.min - cur.min;
+    const progress = Math.min(100, Math.round(((t-cur.min)/span)*100));
+    document.getElementById('storyRankbarFill').style.width = progress+'%';
+  } else {
+    document.getElementById('storyRankbarFill').style.width = '100%';
+  }
+
+  const listBox = document.getElementById('storyList');
+  listBox.innerHTML = '';
+  let xpToday = 0;
+
+  if(dayData.rest){
+    listBox.innerHTML = '<div class="story-item"><span class="lbl">Rest Quest</span><span class="val">+15 WIS</span></div>';
+    xpToday = 15;
+  } else {
+    const done = currentQuests.filter(q=>dayData.completed.includes(q.id));
+    if(done.length===0){
+      listBox.innerHTML = '<div class="story-empty">Квесты дня пока не отмечены.</div>';
+    } else {
+      done.forEach(q=>{
+        const label = q.shortLabel || SHORT_LABELS[q.id] || q.text;
+        const row = document.createElement('div');
+        row.className = 'story-item';
+        row.innerHTML = `<span class="lbl">${label}</span><span class="val">+${q.xp} ${q.stat}</span>`;
+        listBox.appendChild(row);
+        xpToday += q.xp;
+      });
+    }
+  }
+  document.getElementById('storyXpToday').textContent = `+${xpToday} XP сегодня`;
+
+  document.getElementById('storyOverlay').classList.add('show');
+}
+function closeStory(){
+  document.getElementById('storyOverlay').classList.remove('show');
+  backToStoryCard();
+}
+
+async function downloadStoryImage(){
+  const btn = document.getElementById('storyDownloadBtn');
+  const originalText = btn.textContent;
+  btn.textContent = 'РЕНДЕРИМ...';
+  btn.disabled = true;
+  try{
+    const card = document.getElementById('storyCard');
+    const canvas = await html2canvas(card, {scale:3, backgroundColor:'#050810', useCORS:true});
+    const dataUrl = canvas.toDataURL('image/png');
+
+    document.getElementById('storyExportImg').src = dataUrl;
+    document.getElementById('storyCard').style.display = 'none';
+    btn.style.display = 'none';
+    document.getElementById('storyExport').style.display = 'flex';
+  }catch(e){
+    console.error('story export failed', e);
+    flash('НЕ УДАЛОСЬ СРЕНДЕРИТЬ — попробуй ещё раз или скриншот');
+  }
+  btn.textContent = originalText;
+  btn.disabled = false;
+}
+function backToStoryCard(){
+  document.getElementById('storyExport').style.display = 'none';
+  document.getElementById('storyCard').style.display = 'flex';
+  document.getElementById('storyDownloadBtn').style.display = '';
+}
+
+function showConfirm(message){
+  return new Promise((resolve)=>{
+    document.getElementById('confirmMessage').textContent = message;
+    document.getElementById('confirmCancel').style.display = '';
+    document.getElementById('confirmOverlay').classList.add('show');
+    const okBtn = document.getElementById('confirmOk');
+    const cancelBtn = document.getElementById('confirmCancel');
+    function cleanup(result){
+      document.getElementById('confirmOverlay').classList.remove('show');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(result);
+    }
+    function onOk(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+  });
+}
+
+function showAlert(message){
+  return new Promise((resolve)=>{
+    document.getElementById('confirmMessage').textContent = message;
+    document.getElementById('confirmCancel').style.display = 'none';
+    document.getElementById('confirmOverlay').classList.add('show');
+    const okBtn = document.getElementById('confirmOk');
+    function onOk(){
+      document.getElementById('confirmOverlay').classList.remove('show');
+      document.getElementById('confirmCancel').style.display = '';
+      okBtn.removeEventListener('click', onOk);
+      resolve();
+    }
+    okBtn.addEventListener('click', onOk);
+  });
+}
+
+async function migrateLegacy(){
+  if(!window.storage){
+    await showAlert('Старое хранилище недоступно в этом окне.\nОткрой файл так же, как открывал раньше (через Claude), и попробуй снова.');
+    return;
+  }
+  let p, l, mi, bq;
+  try{
+    p = await window.storage.get('profile', false);
+    l = await window.storage.get('log', false);
+    mi = await window.storage.get('marketingIndex', false);
+    bq = await window.storage.get('bossquest:webapp', false);
+  }catch(e){
+    await showAlert('Не удалось прочитать старое хранилище.\n' + e.message);
+    return;
+  }
+
+  if(!p && !l && !mi && !bq){
+    await showAlert('Старый прогресс не найден в этом окне.');
+    return;
+  }
+
+  let summary = [];
+  if(p && p.value){
+    try{
+      const parsed = JSON.parse(p.value);
+      const total = Object.values(parsed.stats||{}).reduce((a,b)=>a+b,0);
+      summary.push('Статы, всего XP: ' + total);
+    }catch(e){}
+  }
+  if(bq && bq.value){
+    try{
+      const parsedBQ = JSON.parse(bq.value);
+      summary.push('Boss Quest: ' + (parsedBQ.completed?parsedBQ.completed.length:0) + '/7 шагов');
+    }catch(e){}
+  }
+
+  const ok = await showConfirm('Найден старый прогресс:\n' + summary.join('\n') + '\n\nПоказать данные для ручного переноса в таблицу?');
+  if(!ok) return;
+
+  const rows = [];
+  if(p && p.value) rows.push('profile\t' + p.value);
+  if(l && l.value) rows.push('log\t' + l.value);
+  if(mi && mi.value) rows.push('marketingIndex\t' + mi.value);
+  if(bq && bq.value) rows.push('bossquest:webapp\t' + bq.value);
+
+  const textarea = document.getElementById('manualExportText');
+  textarea.value = rows.join('\n');
+  document.getElementById('manualExportOverlay').classList.add('show');
+  textarea.focus();
+  textarea.select();
+}
+
+async function checkDetraining(){
+  let lastDateStr = null;
+  try{
+    const r = await storageGet('lastEngagementDate');
+    lastDateStr = r ? r.value : null;
+  }catch(e){ /* none yet */ }
+
+  if(!lastDateStr){
+    await touchEngagement();
+    return;
+  }
+
+  const today = new Date();
+  const lastDate = new Date(lastDateStr + 'T00:00:00');
+  const diffDays = Math.floor((today - lastDate) / (1000*60*60*24));
+
+  if(diffDays >= 5){
+    const physicalStats = ['STR','AGI','VIT','END'];
+    let decayed = [];
+    physicalStats.forEach(s=>{
+      if((state.stats[s]||0) > 0){
+        const before = state.stats[s];
+        state.stats[s] = Math.max(0, state.stats[s] - 10);
+        if(state.stats[s] !== before) decayed.push(s);
+      }
+    });
+    if(decayed.length > 0){
+      await saveProfile();
+      log(`Детренированность: ${diffDays} дн. без активности — просели ${decayed.join(', ')} (-10 каждый)`);
+    }
+    await touchEngagement();
+  }
+}
+
+async function init(){
+  await loadState();
+  await loadMarketingIndex();
+  await loadStreak();
+  await checkDetraining();
+  const key = todayKey();
+  dayData = await getDay(key);
+
+  document.getElementById('todayLabel').textContent =
+    "QUEST LOG — " + new Date().toLocaleDateString('ru-RU',{weekday:'long', day:'numeric', month:'long'}).toUpperCase();
+
+  document.getElementById('trainToggle').addEventListener('click', (e)=>{
+    e.target.classList.toggle('active');
+    e.target.textContent = 'Тренировка сегодня: ' + (e.target.classList.contains('active') ? 'ДА' : 'НЕТ');
+    renderQuests();
+  });
+  document.getElementById('topicSelect').addEventListener('change', renderQuests);
+  document.getElementById('restBtn').addEventListener('click', onRest);
+  document.getElementById('addCustomQuestBtn').addEventListener('click', addCustomQuest);
+  document.getElementById('customQuestInput').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') addCustomQuest();
+  });
+  document.getElementById('storyBtn').addEventListener('click', openStory);
+  document.getElementById('migrateBtn').addEventListener('click', migrateLegacy);
+  document.getElementById('manualExportClose').addEventListener('click', ()=>{
+    document.getElementById('manualExportOverlay').classList.remove('show');
+  });
+  document.getElementById('storyClose').addEventListener('click', closeStory);
+  document.getElementById('storyDownloadBtn').addEventListener('click', downloadStoryImage);
+  document.getElementById('storyExportBack').addEventListener('click', backToStoryCard);
+  document.getElementById('storyOverlay').addEventListener('click', (e)=>{
+    if(e.target.id==='storyOverlay') closeStory();
+  });
+  document.getElementById('resetLink').addEventListener('click', async ()=>{
+    if(!(await showConfirm('Сбросить весь прогресс (статы и лог)? Это необратимо.'))) return;
+    state.stats = Object.fromEntries(STATS.map(s=>[s,0]));
+    state.log = [];
+    await saveProfile();
+    await saveLog();
+    renderStats();
+    renderHeader();
+    renderLog();
+    flash('ПРОГРЕСС СБРОШЕН');
+  });
+
+  bossData = await getBossQuest();
+
+  renderStats();
+  renderHeader();
+  renderLog();
+  renderQuests();
+  renderBossQuest();
+}
+
+init();
+</script>
+
+<div class="confirm-overlay" id="manualExportOverlay">
+  <div class="confirm-box" style="width:min(92vw,480px);">
+    <p style="margin-bottom:10px;">Скопируй весь текст ниже (клик в поле → Ctrl+A → Ctrl+C).</p>
+    <textarea id="manualExportText" readonly
+      style="width:100%;height:140px;background:var(--panel-alt);color:var(--text-hi);
+      border:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:11px;
+      padding:8px;margin-bottom:12px;resize:vertical;"></textarea>
+    <p style="margin-bottom:14px;">Открой свою Google Таблицу (лист «data»), встань в самую верхнюю ПУСТУЮ строку в колонке A и вставь (Ctrl+V) — данные сами разойдутся по колонкам A (key) и B (value). Если строка с таким же key уже есть — удали старую строку, чтобы не было дублей.</p>
+    <div class="confirm-actions">
+      <button class="btn primary" id="manualExportClose">Готово, закрыть</button>
+    </div>
+  </div>
+</div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <p id="confirmMessage"></p>
+    <div class="confirm-actions">
+      <button class="btn" id="confirmCancel">Отмена</button>
+      <button class="btn primary" id="confirmOk">Подтвердить</button>
+    </div>
+  </div>
+</div>
+
+<div class="story-overlay" id="storyOverlay">
+  <button class="story-close" id="storyClose">✕</button>
+  <button class="btn primary story-download" id="storyDownloadBtn">⬇ СКАЧАТЬ PNG</button>
+  <div class="story-card" id="storyCard">
+    <span class="story-corner tl"></span><span class="story-corner tr"></span>
+    <span class="story-corner bl"></span><span class="story-corner br"></span>
+
+    <div class="story-top">
+      <span class="story-eyebrow">SYSTEM // DAILY REPORT</span>
+      <span class="story-date" id="storyDate">—</span>
+    </div>
+
+    <div class="story-rank-block">
+      <div class="story-rank-row">
+        <span class="story-rank-letter" id="storyRankLetter">E</span>
+        <span class="story-lv" id="storyLevel">Lv.1</span>
+        <span class="story-streak" id="storyStreak">🔥 0</span>
+      </div>
+      <div class="story-rankbar-track"><div class="story-rankbar-fill" id="storyRankbarFill"></div></div>
+    </div>
+
+    <div class="story-list" id="storyList"></div>
+
+    <div class="story-footer">
+      <span class="story-xp-today" id="storyXpToday">+0 XP</span>
+      <span class="story-watermark">SYSTEM · HUNTER LOG</span>
+    </div>
+  </div>
+
+  <div class="story-export" id="storyExport" style="display:none;">
+    <img id="storyExportImg" alt="System story card">
+    <p class="story-export-hint">Зажми картинку (телефон) или кликни правой кнопкой → «Сохранить изображение как…» (компьютер)</p>
+    <button class="btn" id="storyExportBack">← Назад к карточке</button>
+  </div>
+</div>
+
+</body>
+</html>
