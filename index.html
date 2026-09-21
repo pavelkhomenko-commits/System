@@ -6,7 +6,6 @@
 <title>SYSTEM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root{
     --void:#060912;
@@ -365,12 +364,39 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbzKCmRIvE_7f6hI31njPDWkfjzT5eKN7Rjn996ova_h4EAEk4P8cdtWp8qlXtjhJ16b/exec";
 // ==========================================================================
 
+// Локальный кэш всех ключей — заполняется одним запросом при старте (storageLoadAll),
+// после чего storageGet читает из памяти вместо похода в сеть на каждый ключ.
+let __cache = {};
+let __cacheLoaded = false;
+
+async function storageLoadAll(){
+  try{
+    const res = await fetch(`${API_URL}?action=getAll`);
+    if(!res.ok) return false;
+    const data = await res.json();
+    if(data && typeof data === 'object' && !data.error){
+      __cache = data;
+      __cacheLoaded = true;
+      return true;
+    }
+    return false;
+  }catch(e){ console.error('storageLoadAll failed', e); return false; }
+}
+
 async function storageGet(key){
+  if(__cacheLoaded && Object.prototype.hasOwnProperty.call(__cache, key)){
+    const v = __cache[key];
+    if(v !== null && v !== undefined && v !== '') return {value: v};
+    return null;
+  }
   try{
     const res = await fetch(`${API_URL}?action=get&key=${encodeURIComponent(key)}`);
     if(!res.ok) return null;
     const data = await res.json();
-    if(data && data.value !== null && data.value !== undefined && data.value !== '') return {value: data.value};
+    if(data && data.value !== null && data.value !== undefined && data.value !== ''){
+      __cache[key] = data.value;
+      return {value: data.value};
+    }
     return null;
   }catch(e){ console.error('storageGet failed', e); return null; }
 }
@@ -379,7 +405,11 @@ async function storageSet(key, value){
     const res = await fetch(`${API_URL}?action=set&key=${encodeURIComponent(key)}&value=${encodeURIComponent(value)}`);
     if(!res.ok) return null;
     const data = await res.json();
-    return (data && data.saved) ? {key, value} : null;
+    if(data && data.saved){
+      __cache[key] = value;
+      return {key, value};
+    }
+    return null;
   }catch(e){ console.error('storageSet failed', e); return null; }
 }
 
@@ -969,12 +999,24 @@ function closeStory(){
   backToStoryCard();
 }
 
+function ensureHtml2Canvas(){
+  return new Promise((resolve, reject)=>{
+    if(window.html2canvas){ resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    s.onload = ()=>resolve();
+    s.onerror = ()=>reject(new Error('failed to load html2canvas'));
+    document.head.appendChild(s);
+  });
+}
+
 async function downloadStoryImage(){
   const btn = document.getElementById('storyDownloadBtn');
   const originalText = btn.textContent;
   btn.textContent = 'РЕНДЕРИМ...';
   btn.disabled = true;
   try{
+    await ensureHtml2Canvas();
     const card = document.getElementById('storyCard');
     const canvas = await html2canvas(card, {scale:3, backgroundColor:'#050810', useCORS:true});
     const dataUrl = canvas.toDataURL('image/png');
@@ -1119,6 +1161,7 @@ async function checkDetraining(){
 }
 
 async function init(){
+  await storageLoadAll();
   await loadState();
   await loadMarketingIndex();
   await loadStreak();
